@@ -1,0 +1,47 @@
+name: Build Android APK
+
+on:
+  # Runs automatically on every push, and can be started manually
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install project dependencies
+        run: |
+          npm install
+          npm install ./plugins/native-ffmpeg
+
+      - name: Create the Android project
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Build the APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Save the APK as a downloadable file
+        uses: actions/upload-artifact@v4
+        with:
+          name: 3gp-converter-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
